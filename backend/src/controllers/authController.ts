@@ -1,15 +1,15 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { users } from '../data/store';
+import { findUserByEmail } from '../data/store';
 import { LoginInput } from '../schemas/authSchema';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const JWT_SECRET = process.env.JWT_SECRET || 'rsdfghjioiuy7trdfyghvjbkhiou8y7t86rutydfcghvbjkhioftd';
 
-export function login(req: Request, res: Response): void {
+export async function login(req: Request, res: Response): Promise<void> {
   const { email, password } = req.body as LoginInput;
 
-  const user = users.find((u) => u.email === email);
+  const user = await findUserByEmail(email);
 
   if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
     res.status(401).json({ error: 'Invalid email or password' });
@@ -22,6 +22,6 @@ export function login(req: Request, res: Response): void {
 
   res.json({
     token,
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role },
   });
 }

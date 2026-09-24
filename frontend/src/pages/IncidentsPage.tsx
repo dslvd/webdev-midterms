@@ -1,70 +1,74 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { apiFetch } from '../api/client';
-import { Incident, IncidentSeverity, IncidentStatus } from '../types';
+import type { Microservice, Environment, ServiceStatus } from '../types';
 
-const SEVERITIES: IncidentSeverity[] = ['low', 'medium', 'high', 'critical'];
-const STATUSES: IncidentStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
+const ENVIRONMENTS: Environment[] = ['DEVELOPMENT', 'STAGING', 'PRODUCTION'];
+const STATUSES: ServiceStatus[] = ['HEALTHY', 'DEGRADED', 'DOWN'];
 
-export function IncidentsPage() {
+export function ServicesPage() {
   const { state, dispatch } = useAppContext();
-  const token = state.auth.token;
+  const token = state.token;
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [severity, setSeverity] = useState<IncidentSeverity>('low');
+  const [name, setName] = useState('');
+  const [endpointUrl, setEndpointUrl] = useState('');
+  const [environment, setEnvironment] = useState<Environment>('DEVELOPMENT');
+  const [status, setStatus] = useState<ServiceStatus>('HEALTHY');
+  const [version, setVersion] = useState('');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    async function fetchIncidents() {
+    async function fetchServices() {
       try {
-        const data = await apiFetch<Incident[]>('/incidents', {}, token);
-        dispatch({ type: 'FETCH_SUCCESS', payload: data });
+        const data = await apiFetch<Microservice[]>('/services', {}, token);
+        dispatch({ type: 'FETCH_SERVICES_SUCCESS', payload: data });
       } catch (err) {
         dispatch({
           type: 'SET_ERROR',
-          payload: err instanceof Error ? err.message : 'Failed to load incidents',
+          payload: err instanceof Error ? err.message : 'Failed to load services',
         });
       }
     }
-    fetchIncidents();
+    fetchServices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  async function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setCreating(true);
     try {
-      const incident = await apiFetch<Incident>(
-        '/incidents',
+      const service = await apiFetch<Microservice>(
+        '/services',
         {
           method: 'POST',
-          body: JSON.stringify({ title, description, severity }),
+          body: JSON.stringify({ name, endpointUrl, environment, status, version }),
         },
         token
       );
-      dispatch({ type: 'CREATE_SUCCESS', payload: incident });
-      setTitle('');
-      setDescription('');
-      setSeverity('low');
+      dispatch({ type: 'CREATE_SERVICE_SUCCESS', payload: service });
+      setName('');
+      setEndpointUrl('');
+      setEnvironment('DEVELOPMENT');
+      setStatus('HEALTHY');
+      setVersion('');
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: err instanceof Error ? err.message : 'Failed to create incident',
+        payload: err instanceof Error ? err.message : 'Failed to create service',
       });
     } finally {
       setCreating(false);
     }
   }
 
-  async function handleStatusChange(id: string, status: IncidentStatus) {
+  async function handleStatusChange(id: string, newStatus: ServiceStatus) {
     try {
-      const incident = await apiFetch<Incident>(
-        `/incidents/${id}`,
-        { method: 'PATCH', body: JSON.stringify({ status }) },
+      const service = await apiFetch<Microservice>(
+        `/services/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ status: newStatus }) },
         token
       );
-      dispatch({ type: 'UPDATE_SUCCESS', payload: incident });
+      dispatch({ type: 'UPDATE_SERVICE_SUCCESS', payload: service });
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
@@ -73,37 +77,42 @@ export function IncidentsPage() {
     }
   }
 
-  async function handleSeverityChange(id: string, newSeverity: IncidentSeverity) {
+  async function handleEnvironmentChange(id: string, newEnvironment: Environment) {
     try {
-      const incident = await apiFetch<Incident>(
-        `/incidents/${id}`,
-        { method: 'PATCH', body: JSON.stringify({ severity: newSeverity }) },
+      const service = await apiFetch<Microservice>(
+        `/services/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ environment: newEnvironment }) },
         token
       );
-      dispatch({ type: 'UPDATE_SUCCESS', payload: incident });
+      dispatch({ type: 'UPDATE_SERVICE_SUCCESS', payload: service });
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: err instanceof Error ? err.message : 'Failed to update severity',
+        payload: err instanceof Error ? err.message : 'Failed to update environment',
       });
     }
   }
 
   async function handleDelete(id: string) {
     try {
-      await apiFetch<void>(`/incidents/${id}`, { method: 'DELETE' }, token);
-      dispatch({ type: 'DELETE_SUCCESS', payload: { id } });
+      await apiFetch<void>(`/services/${id}`, { method: 'DELETE' }, token);
+      dispatch({ type: 'DELETE_SERVICE_SUCCESS', payload: id });
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: err instanceof Error ? err.message : 'Failed to delete incident',
+        payload: err instanceof Error ? err.message : 'Failed to delete service',
       });
     }
   }
 
+  const visibleServices =
+    state.selectedEnvironment === 'ALL'
+      ? state.services
+      : state.services.filter((s) => s.environment === state.selectedEnvironment);
+
   return (
     <div style={{ maxWidth: 720, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h1>PulseDesk Incidents</h1>
+      <h1>MicroServices</h1>
 
       {state.error && <p style={{ color: 'red' }}>{state.error}</p>}
 
@@ -111,40 +120,71 @@ export function IncidentsPage() {
         onSubmit={handleCreate}
         style={{ marginBottom: 24, border: '1px solid #ccc', padding: 16 }}
       >
-        <h2>New Incident</h2>
+        <h2>New Microservice</h2>
         <div style={{ marginBottom: 8 }}>
-          <label htmlFor="title">Title</label>
+          <label htmlFor="name">Name</label>
           <br />
           <input
-            id="title"
+            id="name"
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             style={{ width: '100%', padding: 6 }}
+            minLength={3}
+            maxLength={60}
             required
           />
         </div>
         <div style={{ marginBottom: 8 }}>
-          <label htmlFor="description">Description</label>
+          <label htmlFor="endpointUrl">Endpoint URL</label>
           <br />
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+          <input
+            id="endpointUrl"
+            type="text"
+            value={endpointUrl}
+            onChange={(e) => setEndpointUrl(e.target.value)}
             style={{ width: '100%', padding: 6 }}
             required
           />
         </div>
         <div style={{ marginBottom: 8 }}>
-          <label htmlFor="severity">Severity</label>
+          <label htmlFor="version">Version</label>
+          <br />
+          <input
+            id="version"
+            type="text"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            style={{ width: '100%', padding: 6 }}
+            required
+          />
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <label htmlFor="environment">Environment</label>
           <br />
           <select
-            id="severity"
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value as IncidentSeverity)}
+            id="environment"
+            value={environment}
+            onChange={(e) => setEnvironment(e.target.value as Environment)}
             style={{ width: '100%', padding: 6 }}
           >
-            {SEVERITIES.map((s) => (
+            {ENVIRONMENTS.map((env) => (
+              <option key={env} value={env}>
+                {env}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <label htmlFor="status">Status</label>
+          <br />
+          <select
+            id="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ServiceStatus)}
+            style={{ width: '100%', padding: 6 }}
+          >
+            {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -152,27 +192,46 @@ export function IncidentsPage() {
           </select>
         </div>
         <button type="submit" disabled={creating} style={{ padding: '8px 16px' }}>
-          {creating ? 'Creating...' : 'Create Incident'}
+          {creating ? 'Creating...' : 'Create Service'}
         </button>
       </form>
 
-      <h2>All Incidents</h2>
-      {state.incidents.length === 0 && <p>No incidents.</p>}
+      <div style={{ marginBottom: 16 }}>
+        <label htmlFor="env-filter">Filter by environment</label>
+        <br />
+        <select
+          id="env-filter"
+          value={state.selectedEnvironment}
+          onChange={(e) =>
+            dispatch({ type: 'SET_ENV_FILTER', payload: e.target.value as Environment | 'ALL' })
+          }
+        >
+          <option value="ALL">ALL</option>
+          {ENVIRONMENTS.map((env) => (
+            <option key={env} value={env}>
+              {env}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <h2>All Microservices</h2>
+      {visibleServices.length === 0 && <p>No microservices.</p>}
       <ul style={{ listStyle: 'none', padding: 0 }}>
-        {state.incidents.map((incident) => (
+        {visibleServices.map((service) => (
           <li
-            key={incident.id}
+            key={service.id}
             style={{ border: '1px solid #ddd', padding: 12, marginBottom: 10 }}
           >
-            <strong>{incident.title}</strong>
-            <p style={{ margin: '4px 0' }}>{incident.description}</p>
+            <strong>{service.name}</strong> <span>v{service.version}</span>
+            <p style={{ margin: '4px 0' }}>{service.endpointUrl}</p>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <label>
                 Status:{' '}
                 <select
-                  value={incident.status}
+                  value={service.status}
                   onChange={(e) =>
-                    handleStatusChange(incident.id, e.target.value as IncidentStatus)
+                    handleStatusChange(service.id, e.target.value as ServiceStatus)
                   }
                 >
                   {STATUSES.map((s) => (
@@ -183,21 +242,21 @@ export function IncidentsPage() {
                 </select>
               </label>
               <label>
-                Severity:{' '}
+                Environment:{' '}
                 <select
-                  value={incident.severity}
+                  value={service.environment}
                   onChange={(e) =>
-                    handleSeverityChange(incident.id, e.target.value as IncidentSeverity)
+                    handleEnvironmentChange(service.id, e.target.value as Environment)
                   }
                 >
-                  {SEVERITIES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
+                  {ENVIRONMENTS.map((env) => (
+                    <option key={env} value={env}>
+                      {env}
                     </option>
                   ))}
                 </select>
               </label>
-              <button onClick={() => handleDelete(incident.id)} style={{ padding: '4px 10px' }}>
+              <button onClick={() => handleDelete(service.id)} style={{ padding: '4px 10px' }}>
                 Delete
               </button>
             </div>

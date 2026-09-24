@@ -1,33 +1,40 @@
-import { State, Action } from '../types';
+import type { State, Action } from '../types';
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_AUTH':
       return {
         ...state,
-        auth: { token: action.payload.token, user: action.payload.user },
+        user: action.payload.user,
+        token: action.payload.token,
         error: null,
       };
 
-    case 'FETCH_SUCCESS':
-      return { ...state, incidents: action.payload, error: null };
+    case 'LOGOUT':
+      return { ...state, user: null, token: null, services: [] };
 
-    case 'CREATE_SUCCESS':
-      return { ...state, incidents: [...state.incidents, action.payload], error: null };
+    case 'SET_ENV_FILTER':
+      return { ...state, selectedEnvironment: action.payload };
 
-    case 'UPDATE_SUCCESS':
+    case 'FETCH_SERVICES_SUCCESS':
+      return { ...state, services: action.payload, error: null };
+
+    case 'CREATE_SERVICE_SUCCESS':
+      return { ...state, services: [...state.services, action.payload], error: null };
+
+    case 'UPDATE_SERVICE_SUCCESS':
       return {
         ...state,
-        incidents: state.incidents.map((incident) =>
-          incident.id === action.payload.id ? action.payload : incident
+        services: state.services.map((service) =>
+          service.id === action.payload.id ? action.payload : service
         ),
         error: null,
       };
 
-    case 'DELETE_SUCCESS':
+    case 'DELETE_SERVICE_SUCCESS':
       return {
         ...state,
-        incidents: state.incidents.filter((incident) => incident.id !== action.payload.id),
+        services: state.services.filter((service) => service.id !== action.payload),
         error: null,
       };
 

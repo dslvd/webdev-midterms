@@ -16,7 +16,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as AuthTokenPayload;
-    req.user = { id: decoded.id, username: decoded.username };
+    req.user = { id: decoded.id, email: decoded.email };
     next();
   } catch {
     res.status(401).json({ error: 'Unauthorized' });

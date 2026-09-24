@@ -1,22 +1,15 @@
-import React from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { LoginPage } from './pages/LoginPage';
-import { IncidentsPage } from './pages/IncidentsPage';
+import { ServicesPage } from './pages/IncidentsPage';
 
 function Main() {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
 
   function handleLogout() {
-    try {
-      localStorage.removeItem('pulsedesk_token');
-      localStorage.removeItem('pulsedesk_user');
-    } catch {
-      // ignore storage errors
-    }
-    window.location.reload();
+    dispatch({ type: 'LOGOUT' });
   }
 
-  if (!state.auth.token) {
+  if (!state.token) {
     return <LoginPage />;
   }
 
@@ -31,11 +24,11 @@ function Main() {
         }}
       >
         <span style={{ marginRight: 12 }}>
-          Signed in as {state.auth.user?.name ?? state.auth.user?.username}
+          Signed in as {state.user?.name}
         </span>
         <button onClick={handleLogout}>Log out</button>
       </div>
-      <IncidentsPage />
+      <ServicesPage />
     </div>
   );
 }

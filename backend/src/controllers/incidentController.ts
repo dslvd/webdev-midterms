@@ -1,58 +1,48 @@
 import { Request, Response } from 'express';
-import { MicroService, nextServiceStatusId } from '../data/store';
-import { CreateIncidentInput, ServiceStatus, UpdateMicroserviceInput } from '../schemas/incidentSchema';
+import * as store from '../data/store';
+import type { CreateServiceInput, UpdateServiceInput } from '../schemas/incidentSchema';
 
-export function create(req: Request, res: Response): void {
-  const { ServiceStatus } = req.body as CreateIncidentInput;
-  const now = new Date().toISOString();
+export async function createService(req: Request, res: Response): Promise<void> {
+  const { name, endpointUrl, environment, status, version } = req.body as CreateServiceInput;
 
-  const MicroService = {
-    id: nextServiceStatusId(),
+  const service = await store.createService({
+    name,
     endpointUrl,
     environment,
-    status: 'HEALTHY' as const,
-    createdAt: now,
-  };
+    status,
+    version,
+    ownerEmail: req.user?.email ?? '',
+  });
 
-  MicroService.push(ServiceStatus);
-  res.status(201).json(ServiceStatus);
+  res.status(201).json(service);
 }
 
-export function MicroService(_req: Request, res: Response): void {
-  res.json(ServiceStatus);
+export async function listServices(_req: Request, res: Response): Promise<void> {
+  res.json(await store.listServices());
 }
 
-export function updateServiceStatus(req: Request, res: Response): void {
-  const { id } = req.params;
-  const updates = req.body as UpdateMicroserviceInput;
+export async function updateService(req: Request, res: Response): Promise<void> {
+  const id = String(req.params.id);
+  const updates = req.body as UpdateServiceInput;
 
-  const ServiceStatus = incidents.find((i) => i.id === id);
+  const service = await store.updateService(id, updates);
 
-  if (!ServiceStatus) {
-    res.status(404).json({ error: 'Service Status not found' });
+  if (!service) {
+    res.status(404).json({ error: 'Service not found' });
     return;
   }
 
-  if (updates.status) {
-    ServiceStatus.status = updates.status;
-  }
-  if (updates.environment) {
-    ServiceStatus.environment = updates.environment;
-  }
-  ServiceStatus.updatedAt = new Date().toISOString();
-
-  res.json(ServiceStatus);
+  res.json(service);
 }
 
-export function deleteServiceStatus(req: Request, res: Response): void {
-  const { id } = req.params;
-  const index = incidents.findIndex((i) => i.id === id);
+export async function deleteService(req: Request, res: Response): Promise<void> {
+  const id = String(req.params.id);
+  const deleted = await store.deleteService(id);
 
-  if (index === -1) {
-    res.status(404).json({ error: 'Service Status not found' });
+  if (!deleted) {
+    res.status(404).json({ error: 'Service not found' });
     return;
   }
 
-  ServiceStatus.splice(index, 1);
   res.status(204).send();
 }

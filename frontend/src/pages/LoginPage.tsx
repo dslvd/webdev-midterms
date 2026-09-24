@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { apiFetch } from '../api/client';
-import { User } from '../types';
+import type { User } from '../types';
 
 interface LoginResponse {
   token: string;
@@ -14,7 +14,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
@@ -32,10 +32,10 @@ export function LoginPage() {
 
   return (
     <div style={{ maxWidth: 320, margin: '80px auto', fontFamily: 'sans-serif' }}>
-      <h1>PulseDesk Login</h1>
+      <h1>Microservice Login</h1>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 12 }}>
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">Email</label>
           <br />
           <input
             id="username"
@@ -62,7 +62,7 @@ export function LoginPage() {
       </form>
       {state.error && <p style={{ color: 'red' }}>{state.error}</p>}
       <p style={{ fontSize: 12, color: '#666' }}>
-        Sample credentials: <code>agent1</code> / <code>password123</code>
+        Sample credentials: <code>agent1@gmail.com</code> / <code>password123</code>
       </p>
     </div>
   );
