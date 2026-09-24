@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createServiceSchema, updateServiceSchema, deleteServiceSchema } from '../schemas/incidentSchema';
+import { createServiceSchema, updateServiceSchema, deleteServiceSchema } from '../schemas/statusSchema';
 import {
   createService,
   listServices,
   updateService,
   deleteService,
-} from '../controllers/incidentController';
+} from '../controllers/statusController';
 
 const router = Router();
 

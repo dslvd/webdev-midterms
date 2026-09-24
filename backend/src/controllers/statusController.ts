@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as store from '../data/store';
-import type { CreateServiceInput, UpdateServiceInput } from '../schemas/incidentSchema';
+import type { CreateServiceInput, UpdateServiceInput } from '../schemas/statusSchema';
 
 export async function createService(req: Request, res: Response): Promise<void> {
   const { name, endpointUrl, environment, status, version } = req.body as CreateServiceInput;

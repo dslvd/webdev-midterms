@@ -1,6 +1,6 @@
 import { AppProvider, useAppContext } from './context/AppContext';
 import { LoginPage } from './pages/LoginPage';
-import { ServicesPage } from './pages/IncidentsPage';
+import { ServicesPage } from './pages/MicroServicesDashboard';
 
 function Main() {
   const { state, dispatch } = useAppContext();
